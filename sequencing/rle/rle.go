@@ -31,11 +31,13 @@ func (f *rleSequence) GetCounts() []byte {
 type runLengthEncoder struct {
 	out   chan sequencing.Sequence
 	input <-chan sequencing.Sequence
+	numRoutines int
 }
 
 type rleToSequence struct {
 	out   chan sequencing.Sequence
 	input <-chan sequencing.Sequence
+	numRoutines int
 }
 
 func RunLengthToASCII(counts []byte) string {
@@ -59,7 +61,7 @@ func ASCIIToRunLength(countString string) []byte {
 }
 
 func NewRunLengthEncoder(n int) *runLengthEncoder {
-	return &runLengthEncoder{out: make(chan sequencing.Sequence, n+1)}
+	return &runLengthEncoder{out: make(chan sequencing.Sequence, n+1), numRoutines:n}
 }
 
 func (r *runLengthEncoder) GetOutput() <-chan sequencing.Sequence {
@@ -93,6 +95,10 @@ func (r *runLengthEncoder) Run(complete chan<- bool) {
 		r.out <- &rleSequence{name: seq.GetName(), sequence: out, counts: count}
 	}
 	complete <- true
+}
+
+func (r *runLengthEncoder) GetNumRoutines() int {
+	return r.numRoutines
 }
 
 func (r *runLengthEncoder) Close() {
@@ -132,7 +138,7 @@ func RevertRLE(seq, counts []byte) []byte {
 }
 
 func NewRLEToSequence(n int) *rleToSequence {
-	return &rleToSequence{out: make(chan sequencing.Sequence, n+1)}
+	return &rleToSequence{out: make(chan sequencing.Sequence, n+1),numRoutines:n}
 }
 
 func (r *rleToSequence) GetOutput() <-chan sequencing.Sequence {
@@ -161,6 +167,10 @@ func (r *rleToSequence) Run(complete chan<- bool) {
 		}
 	}
 	complete <- true
+}
+
+func (r *rleToSequence) GetNumRoutines() int {
+	return r.numRoutines
 }
 
 func (r *rleToSequence) Close() {

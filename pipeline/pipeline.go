@@ -7,9 +7,13 @@ import (
 )
 
 type PipelineComponent interface {
-	//This should pass a producer/consumer channel across between the components
+	//Attach should pass a producer/consumer channel across between the components
 	Attach(PipelineComponent) error
+	//Run starts the pipeline component which must return a bool on the channel when complete
 	Run(chan<- bool)
+	//GetNumRoutines retrieves the number of threads this component expects to be run across. Approximate values won't break things.
+	GetNumRoutines() int
+	//Close will be called on this component after all of its Run calls have completed. It can then close any output channels.
 	Close()
 }
 
@@ -27,7 +31,8 @@ func NewPipeline() *Pipeline {
 	return &Pipeline{components: make([]PipelineComponent, 0, 10), nRoutines: make([]int, 0, 10)}
 }
 
-func (p *Pipeline) Append(c PipelineComponent, numRoutines int) {
+func (p *Pipeline) Append(c PipelineComponent) {
+	numRoutines := c.GetNumRoutines()
 	p.components = append(p.components, c)
 	p.nRoutines = append(p.nRoutines, numRoutines)
 	if len(p.components) > 1 {

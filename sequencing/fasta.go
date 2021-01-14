@@ -22,6 +22,7 @@ func (f *FastA) GetContents() []byte {
 type fastAReader struct {
 	out   chan Sequence
 	input <-chan string
+	numRoutines int
 }
 
 type fastAWriter struct {
@@ -30,11 +31,15 @@ type fastAWriter struct {
 }
 
 func NewFastAReader(n int) *fastAReader {
-	return &fastAReader{out: make(chan Sequence, n+1)}
+	return &fastAReader{out: make(chan Sequence, n+1), numRoutines:n}
 }
 
 func (r *fastAReader) GetOutput() <-chan Sequence {
 	return r.out
+}
+
+func (r *fastAReader) GetNumRoutines() int {
+	return r.numRoutines
 }
 
 //Attach expects a StringComponent
@@ -101,5 +106,8 @@ func (r *fastAWriter) Run(complete chan<- bool) {
 		io.WriteString(out, "\n")
 	}
 	complete <- true
+}
+func (r *fastAWriter) GetNumRoutines() int {
+	return 1
 }
 func (r *fastAWriter) Close() {}

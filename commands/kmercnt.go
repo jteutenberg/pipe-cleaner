@@ -19,13 +19,13 @@ func main() {
 	threads := 4
 
 	p := pipeline.NewPipeline()
-	p.Append(util.NewLineReader(*inputFile), 1)
-	p.Append(sequencing.NewFastAReader(1), 1)
+	p.Append(util.NewLineReader(*inputFile))
+	p.Append(sequencing.NewFastAReader(1))
 	if *h {
-		p.Append(rle.NewRunLengthEncoder(threads), threads)
+		p.Append(rle.NewRunLengthEncoder(threads))
 	}
-	p.Append(kmer.NewKmerComponent(*k, threads), threads)
-	p.Append(kmer.NewKmerCounter(*outputFile, *k, 1000000), 1) //bottlenecked at the map
+	p.Append(kmer.NewKmerComponent(*k, threads))
+	p.Append(kmer.NewKmerCounter(*outputFile, *k, 1000000)) //bottlenecked at the map
 
 	p.Run()
 }

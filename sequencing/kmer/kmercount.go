@@ -25,6 +25,7 @@ type kmerComponent struct {
 	output chan *KmerSequence
 	input  <-chan sequencing.Sequence
 	k      int
+	numRoutines int
 }
 
 type kmerCounter struct {
@@ -36,7 +37,7 @@ type kmerCounter struct {
 }
 
 func NewKmerComponent(k int, n int) *kmerComponent {
-	return &kmerComponent{output: make(chan *KmerSequence, n+1), k: k}
+	return &kmerComponent{output: make(chan *KmerSequence, n+1), k: k, numRoutines: n}
 }
 
 func (r *kmerComponent) GetOutput() <-chan *KmerSequence {
@@ -83,6 +84,10 @@ func (r *kmerComponent) Run(complete chan<- bool) {
 	complete <- true
 }
 
+func (r *kmerComponent) GetNumRoutines() int {
+	return r.numRoutines
+}
+
 func (r *kmerComponent) Close() {
 	close(r.output)
 }
@@ -104,7 +109,7 @@ func (r *kmerCounter) Attach(p pipeline.PipelineComponent) error {
 func (r *kmerCounter) Run(complete chan<- bool) {
 	for ks := range r.input {
 		//lock the count and enter all k-mers
-		r.lock.Lock()
+		r.lock.Lock() //NOTE: not actually required since this component is fixed to one thread
 		for _, kmer := range ks.kmers {
 			if count, exists := r.counts[kmer]; exists {
 				r.counts[kmer] = count + 1
@@ -115,6 +120,10 @@ func (r *kmerCounter) Run(complete chan<- bool) {
 		r.lock.Unlock()
 	}
 	complete <- true
+}
+
+func (r *kmerCounter) GetNumRoutines() int {
+	return 1
 }
 
 type outputRow struct {

@@ -15,11 +15,11 @@ func main() {
 
 	threads := 4
 	p := pipeline.NewPipeline()
-	p.Append(util.NewLineReader(*inputFile), 1)
-	p.Append(sequencing.NewFastAReader(1), 1)
-	p.Append(rle.NewRunLengthEncoder(threads), threads)
-	p.Append(rle.NewRLEToSequence(threads), threads)
-	p.Append(sequencing.NewFastAWriter(*outputFile), 1)
+	p.Append(util.NewLineReader(*inputFile))
+	p.Append(sequencing.NewFastAReader(1))
+	p.Append(rle.NewRunLengthEncoder(threads))
+	p.Append(rle.NewRLEToSequence(threads))
+	p.Append(sequencing.NewFastAWriter(*outputFile))
 
 	p.Run()
 }

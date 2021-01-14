@@ -23,6 +23,10 @@ func (r *lineReader) Attach(p pipeline.PipelineComponent) error {
 	return nil
 }
 
+func (r *lineReader) GetNumRoutines() int {
+	return 1
+}
+
 //Run will either read lines from a file with the given
 //name, or if this is the empty string it will read from stdin
 func (r *lineReader) Run(complete chan<- bool) {

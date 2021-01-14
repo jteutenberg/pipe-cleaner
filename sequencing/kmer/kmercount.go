@@ -54,6 +54,7 @@ func (r *kmerComponent) Attach(p pipeline.PipelineComponent) error {
 }
 
 func (r *kmerComponent) Run(complete chan<- bool) {
+	toShift := uint((r.k-1)*2) //how far to shift a base to get to the reverse position
 	mask := (^uint64(0)) >> uint(64-r.k*2) //1s for all bits that will be used in a k-mer
 	n := 0
 	for seq := range r.input {
@@ -64,6 +65,7 @@ func (r *kmerComponent) Run(complete chan<- bool) {
 		//NOTE: fresh memory for each sequence. If efficiency matters, here's a good place to start.
 		kmers := make([]uint64, len(content)-r.k+1)
 		var next uint64 //slide across bases as a k-mer
+		var nextRC uint64 //the reverse-complement version
 		//NOTE: we ignore the reverse-complement here. Not suitable for many applications
 		for i, b := range []byte(content) {
 			//convert the character into a 0-3 value
@@ -71,11 +73,17 @@ func (r *kmerComponent) Run(complete chan<- bool) {
 			bb := uint64(b)
 			//shuffle it in to make the next k-mer
 			next = ((next << 2) | bb) & mask
+			nextRC = ((nextRC >> 2) | ((^bb) << toShift) & mask) //XOR to complement
 			if i < r.k-1 {
 				//haven't seen enough bases to make the first k-mer yet
 				continue
 			}
-			kmers[n] = next
+			//select the minimum of the two k-mers. Note this can be made branchless pretty easily.
+			minKmer := next
+			if minKmer > nextRC {
+				minKmer = nextRC
+			}
+			kmers[n] = minKmer
 			n++
 		}
 		r.output <- &KmerSequence{kmers: kmers, k: r.k}
